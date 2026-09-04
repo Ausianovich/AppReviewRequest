@@ -46,6 +46,15 @@ struct RequestSheetContainerStoreTests {
         expectNoDifference(store.state.lastPresentedSession, nil)
     }
     
+    @Test func presentRequestViewPresentsAfterFirstPresentationPlusNextCadence() async {
+        let store = makeStore(launchCount: 13, firstPresentation: 3, eachNextPresentation: 10)
+        
+        await store.send(.presentRequestView) {
+            $0.requestStore = RequestSheetStore.State()
+            $0.lastPresentedSession = 13
+        }
+    }
+    
     @Test func presentRequestViewDoesNotRepeatWithinSameLaunchCount() async {
         let store = makeStore(
             launchCount: 6,

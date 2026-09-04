@@ -69,7 +69,8 @@ public struct RequestSheetContainerStore {
                     return .none
                 }
                 
-                guard state.launchCount % state.eachNextPresentation == 0 else {
+                let sessionsSinceFirstPresentation = state.launchCount - state.firstPresentation
+                guard sessionsSinceFirstPresentation % state.eachNextPresentation == 0 else {
                     return .none
                 }
                 
