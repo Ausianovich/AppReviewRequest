@@ -88,7 +88,9 @@ public struct RequestSheetContainerStore {
                     await send(.rateAproved)
                 }
             case .rateAproved:
-                state.rateAproved = true
+                state.$rateAproved.withLock { value in
+                    value = true
+                }
                 return .none
             case .requestStore:
                 return .none

@@ -8,7 +8,7 @@
 import SwiftUI
 
 public extension View {
-    public func rateRequestSheet(configuration: ReviewRequestSheetConfiguration) -> some View {
+    func rateRequestSheet(configuration: ReviewRequestSheetConfiguration) -> some View {
         modifier(RequestViewModifier(configuration: configuration))
     }
 }
