@@ -5,22 +5,36 @@ import PackageDescription
 
 let package = Package(
     name: "AppReviewRequest",
+    platforms: [.macOS(.v26), .iOS(.v26)],
     products: [
-        // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
-            name: "AppReviewRequest",
-            targets: ["AppReviewRequest"]
+            name: "AppReviewRequestUI",
+            targets: ["AppReviewRequestUI"]
         ),
     ],
+    dependencies: [
+        .package(url: "https://github.com/pointfreeco/swift-composable-architecture", from: "1.0.0"),
+        .package(url: "https://github.com/Ausianovich/AppGlobalState.git", from: "1.0.0")
+    ],
     targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
         .target(
-            name: "AppReviewRequest"
+            name: "AppReviewRequest",
+            dependencies: [
+                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+                .product(name: "AppGlobalState", package: "AppGlobalState"),
+            ]
         ),
         .testTarget(
             name: "AppReviewRequestTests",
             dependencies: ["AppReviewRequest"]
+        ),
+        .target(
+            name: "AppReviewRequestUI",
+            dependencies: [
+                "AppReviewRequest",
+                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+                .product(name: "AppGlobalState", package: "AppGlobalState"),
+            ]
         ),
     ],
     swiftLanguageModes: [.v6]
