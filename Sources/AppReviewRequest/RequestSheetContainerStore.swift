@@ -13,18 +13,12 @@ public struct RequestSheetContainerStore {
     
     @Dependency(\.openURL) private var openURL
     
-    public enum Phase {
-        case active
-        case background
-        case inactive
-    }
-    
     public init() {}
     
     @ObservableState
     public struct State: Equatable {
         @Presents public var requestStore: RequestSheetStore.State?
-        @Shared(.launchCount) var launchCount: Int
+        @Shared(.launchCount) public var launchCount: Int
         @Shared(.rateRequestAproved) var rateAproved: Bool
         
         let applicationID: String
@@ -40,8 +34,7 @@ public struct RequestSheetContainerStore {
     }
     
     public enum Action {
-        case updateState(Phase)
-        case presentRequestView
+        case launchCountChanged
         case requestStore(PresentationAction<RequestSheetStore.Action>)
         case rateAproved
     }
@@ -49,14 +42,7 @@ public struct RequestSheetContainerStore {
     public var body: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
-            case .updateState(let phase):
-                if phase == .active {
-                    return .run { send in
-                        await send(.presentRequestView)
-                    }
-                }
-                return .none
-            case .presentRequestView:
+            case .launchCountChanged:
                 if let lastPresentedSession = state.lastPresentedSession, state.launchCount == lastPresentedSession {
                     return .none
                 }

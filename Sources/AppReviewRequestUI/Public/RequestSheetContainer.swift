@@ -10,7 +10,6 @@ import ComposableArchitecture
 import AppReviewRequest
 
 public struct RequestSheetContainer<Content: View>: View {
-    @Environment(\.scenePhase) var scenePhase
     @Bindable var store: StoreOf<RequestSheetContainerStore>
     
     let content: Content
@@ -26,8 +25,8 @@ public struct RequestSheetContainer<Content: View>: View {
             .sheet(item: $store.scope(\.requestStore, action: \.requestStore)) { store in
                 ReviewRequestSheet(store: store, configuration: configuration)
             }
-            .onChange(of: scenePhase) { oldValue, newValue in
-                store.send(.updateState(RequestSheetContainerStore.Phase(newValue)))
+            .onChange(of: store.launchCount, initial: true) {
+                store.send(.launchCountChanged)
             }
     }
 }

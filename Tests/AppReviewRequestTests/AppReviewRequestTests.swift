@@ -8,77 +8,84 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct RequestSheetContainerStoreTests {
-    @Test func activePhasePresentsRequestViewWhenLaunchCountMatchesCadence() async {
+    @Test func coldStartPresentsRequestViewWhenCurrentLaunchCountMatchesCadence() async {
         let store = makeStore(launchCount: 4, firstPresentation: 2, eachNextPresentation: 2)
         
-        await store.send(.updateState(.active))
-        await store.receive(\.presentRequestView) {
+        await store.send(.launchCountChanged) {
             $0.requestStore = RequestSheetStore.State()
             $0.lastPresentedSession = 4
         }
     }
     
-    @Test func inactiveAndBackgroundPhasesDoNotPresentRequestView() async {
-        let store = makeStore(launchCount: 4, firstPresentation: 2, eachNextPresentation: 2)
+    @Test func launchCountChangedDoesNotPresentRequestViewOutsideCadence() async {
+        let store = makeStore(launchCount: 5, firstPresentation: 2, eachNextPresentation: 2)
         
-        await store.send(.updateState(.inactive))
-        await store.send(.updateState(.background))
+        await store.send(.launchCountChanged)
 
         expectNoDifference(store.state.requestStore, nil)
         expectNoDifference(store.state.lastPresentedSession, nil)
     }
     
-    @Test func presentRequestViewWaitsForFirstPresentationLaunchCount() async {
+    @Test func launchCountChangedWaitsForFirstPresentationLaunchCount() async {
         let store = makeStore(launchCount: 2, firstPresentation: 3, eachNextPresentation: 1)
         
-        await store.send(.presentRequestView)
+        await store.send(.launchCountChanged)
 
         expectNoDifference(store.state.requestStore, nil)
         expectNoDifference(store.state.lastPresentedSession, nil)
     }
     
-    @Test func presentRequestViewDoesNotPresentOnZeroLaunchCountBeforeFirstPresentation() async {
+    @Test func launchCountChangedDoesNotPresentOnZeroLaunchCountBeforeFirstPresentation() async {
         let store = makeStore(launchCount: 0, firstPresentation: 3, eachNextPresentation: 10)
         
-        await store.send(.presentRequestView)
+        await store.send(.launchCountChanged)
 
         expectNoDifference(store.state.requestStore, nil)
         expectNoDifference(store.state.lastPresentedSession, nil)
     }
     
-    @Test func presentRequestViewFollowsEachNextPresentationCadence() async {
+    @Test func launchCountChangedFollowsEachNextPresentationCadence() async {
         let store = makeStore(launchCount: 5, firstPresentation: 3, eachNextPresentation: 3)
         
-        await store.send(.presentRequestView)
+        await store.send(.launchCountChanged)
 
         expectNoDifference(store.state.requestStore, nil)
         expectNoDifference(store.state.lastPresentedSession, nil)
     }
     
-    @Test func presentRequestViewPresentsAfterFirstPresentationPlusNextCadence() async {
+    @Test func launchCountChangedPresentsAfterFirstPresentationPlusNextCadence() async {
         let store = makeStore(launchCount: 13, firstPresentation: 3, eachNextPresentation: 10)
         
-        await store.send(.presentRequestView) {
+        await store.send(.launchCountChanged) {
             $0.requestStore = RequestSheetStore.State()
             $0.lastPresentedSession = 13
         }
     }
     
-    @Test func presentRequestViewDoesNotRepeatWithinSameLaunchCount() async {
+    @Test func foregroundingWithoutNewLaunchDoesNotPresentRequestViewAgain() async {
         let store = makeStore(
             launchCount: 6,
             firstPresentation: 3,
-            eachNextPresentation: 3,
-            lastPresentedSession: 6
+            eachNextPresentation: 3
         )
         
-        await store.send(.presentRequestView)
+        await store.send(.launchCountChanged) {
+            $0.requestStore = RequestSheetStore.State()
+            $0.lastPresentedSession = 6
+        }
+        await store.send(.requestStore(.dismiss)) {
+            $0.requestStore = nil
+        }
+
+        // A repeated callback with the same launch count models a view
+        // reappearing after the application returns to the foreground.
+        await store.send(.launchCountChanged)
 
         expectNoDifference(store.state.requestStore, nil)
         expectNoDifference(store.state.lastPresentedSession, 6)
     }
     
-    @Test func presentRequestViewDoesNotPresentAfterRateApproval() async {
+    @Test func launchCountChangedDoesNotPresentAfterRateApproval() async {
         let store = makeStore(
             launchCount: 6,
             rateAproved: true,
@@ -86,7 +93,7 @@ struct RequestSheetContainerStoreTests {
             eachNextPresentation: 3
         )
         
-        await store.send(.presentRequestView)
+        await store.send(.launchCountChanged)
 
         expectNoDifference(store.state.requestStore, nil)
         expectNoDifference(store.state.lastPresentedSession, nil)
