@@ -26,7 +26,7 @@ let package = Package(
         ),
         .testTarget(
             name: "AppReviewRequestTests",
-            dependencies: ["AppReviewRequest"]
+            dependencies: ["AppReviewRequest", "AppReviewRequestUI"]
         ),
         .target(
             name: "AppReviewRequestUI",

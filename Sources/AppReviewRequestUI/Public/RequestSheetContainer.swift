@@ -19,13 +19,23 @@ public struct RequestSheetContainer<Content: View>: View {
         self.store = Store(initialState: RequestSheetContainerStore.State(applicationID: configuration.applicationID, firstPresentation: configuration.firstSessionPresentation, eachNextPresentation: configuration.eachNextSessionPresentation), reducer: { RequestSheetContainerStore() })
         self.content = content()
     }
+
+    init(
+        store: StoreOf<RequestSheetContainerStore>,
+        configuration: ReviewRequestSheetConfiguration,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.configuration = configuration
+        self.store = store
+        self.content = content()
+    }
     
     public var body: some View {
         content
             .sheet(item: $store.scope(\.requestStore, action: \.requestStore)) { store in
                 ReviewRequestSheet(store: store, configuration: configuration)
             }
-            .onChange(of: store.launchCount, initial: true) {
+            .onChange(of: store.launchCount) {
                 store.send(.launchCountChanged)
             }
     }

@@ -1,20 +1,54 @@
 import ComposableArchitecture
 import CustomDump
 import Foundation
+import SwiftUI
 import Synchronization
 import Testing
 @testable import AppReviewRequest
+@testable import AppReviewRequestUI
+
+#if canImport(AppKit)
+import AppKit
+#endif
 
 @MainActor
 @Suite(.serialized)
 struct RequestSheetContainerStoreTests {
-    @Test func coldStartPresentsRequestViewWhenCurrentLaunchCountMatchesCadence() async {
-        let store = makeStore(launchCount: 4, firstPresentation: 2, eachNextPresentation: 2)
-        
-        await store.send(.launchCountChanged) {
-            $0.requestStore = RequestSheetStore.State()
-            $0.lastPresentedSession = 4
+    @Test func coldStartDoesNotPresentRequestView() async {
+        let store = Store(
+            initialState: makeState(
+                launchCount: 4,
+                firstPresentation: 2,
+                eachNextPresentation: 2
+            )
+        ) {
+            RequestSheetContainerStore()
         }
+        let view = RequestSheetContainer(
+            store: store,
+            configuration: ReviewRequestSheetConfiguration(
+                icon: Image(systemName: "star.fill"),
+                title: "Title",
+                message: "Message",
+                rateButtonTitle: "Rate",
+                maybeLaterButtonTitle: "Later",
+                tint: .blue,
+                applicationID: "123456789",
+                firstSessionPresentation: 2,
+                eachNextSessionPresentation: 2
+            )
+        ) {
+            Color.clear
+        }
+
+#if canImport(AppKit)
+        let hostingController = NSHostingController(rootView: view)
+        hostingController.view.layoutSubtreeIfNeeded()
+        await Task.yield()
+#endif
+
+        expectNoDifference(store.requestStore, nil)
+        expectNoDifference(store.lastPresentedSession, nil)
     }
     
     @Test func launchCountChangedDoesNotPresentRequestViewOutsideCadence() async {
@@ -148,6 +182,30 @@ private func makeStore(
     applicationID: String = "123456789",
     isRequestStorePresented: Bool = false
 ) -> TestStoreOf<RequestSheetContainerStore> {
+    let state = makeState(
+        launchCount: launchCount,
+        rateAproved: rateAproved,
+        firstPresentation: firstPresentation,
+        eachNextPresentation: eachNextPresentation,
+        lastPresentedSession: lastPresentedSession,
+        applicationID: applicationID,
+        isRequestStorePresented: isRequestStorePresented
+    )
+
+    return TestStore(initialState: state) {
+        RequestSheetContainerStore()
+    }
+}
+
+private func makeState(
+    launchCount: Int,
+    rateAproved: Bool = false,
+    firstPresentation: Int,
+    eachNextPresentation: Int,
+    lastPresentedSession: Int? = nil,
+    applicationID: String = "123456789",
+    isRequestStorePresented: Bool = false
+) -> RequestSheetContainerStore.State {
     var state = RequestSheetContainerStore.State(
         applicationID: applicationID,
         firstPresentation: firstPresentation,
@@ -160,7 +218,5 @@ private func makeStore(
         state.requestStore = RequestSheetStore.State()
     }
     
-    return TestStore(initialState: state) {
-        RequestSheetContainerStore()
-    }
+    return state
 }
